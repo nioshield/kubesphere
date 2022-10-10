@@ -41,12 +41,9 @@ func NewAPIServerCommand() *cobra.Command {
 	// Load configuration from file
 	conf, err := apiserverconfig.TryLoadFromDisk()
 	if err == nil {
-		s = &options.ServerRunOptions{
-			GenericServerRunOptions: s.GenericServerRunOptions,
-			Config:                  conf,
-		}
+		s.Config = conf
 	} else {
-		klog.Fatal("Failed to load configuration from disk", err)
+		klog.Fatalf("Failed to load configuration from disk: %v", err)
 	}
 
 	cmd := &cobra.Command{

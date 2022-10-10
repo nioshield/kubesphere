@@ -4,10 +4,10 @@
 
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true,allowDangerousTypes=true"
 
-GV="network:v1alpha1 servicemesh:v1alpha2 tenant:v1alpha1 tenant:v1alpha2 devops:v1alpha1 iam:v1alpha2 devops:v1alpha3 cluster:v1alpha1 storage:v1alpha1 auditing:v1alpha1 types:v1beta1 types:v1beta2 quota:v1alpha2 application:v1alpha1 notification:v2beta1 notification:v2beta2 gateway:v1alpha1"
-MANIFESTS="application/* cluster/* iam/* network/v1alpha1 quota/* storage/* tenant/* gateway/*"
+GV="network:v1alpha1 servicemesh:v1alpha2 tenant:v1alpha1 tenant:v1alpha2 devops:v1alpha1 iam:v1alpha2 devops:v1alpha3 cluster:v1alpha1 storage:v1alpha1 auditing:v1alpha1 types:v1beta1 types:v1beta2 quota:v1alpha2 application:v1alpha1 notification:v2beta1 notification:v2beta2 gateway:v1alpha1 alerting:v2beta1"
+MANIFESTS="application/* cluster/* iam/* network/v1alpha1 quota/* storage/* tenant/* gateway/* alerting/*"
 
 # App Version
 APP_VERSION = v3.2.0
@@ -96,6 +96,7 @@ deploy: manifests ;$(info $(M)...Begin to deploy.)  @ ## Deploy.
 mockgen: ;$(info $(M)...Begin to mockgen.)  @ ## Mockgen.
 	mockgen -package=openpitrix -source=pkg/simple/client/openpitrix/openpitrix.go -destination=pkg/simple/client/openpitrix/mock.go
 
+# Deprecated deepcopy cause we will replace deepcopy-gen with controller-gen
 deepcopy: ;$(info $(M)...Begin to deepcopy.)  @ ## Deepcopy.
 	hack/generate_group.sh "deepcopy" kubesphere.io/api kubesphere.io/api ${GV} --output-base=staging/src/  -h "hack/boilerplate.go.txt"
 
@@ -153,6 +154,7 @@ clean: ;$(info $(M)...Begin to clean.)  @ ## Clean.
 	-make -C ./pkg/version clean
 	@echo "ok"
 
+# Deprecated clientset cause we will replace code-generate with controller-runtime cache
 clientset:  ;$(info $(M)...Begin to find or download controller-gen.)  @ ## Find or download controller-gen,download controller-gen if necessary.
 	./hack/generate_client.sh ${GV}
 

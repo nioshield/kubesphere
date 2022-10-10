@@ -67,6 +67,7 @@ import (
 	"kubesphere.io/kubesphere/pkg/informers"
 	alertingv1 "kubesphere.io/kubesphere/pkg/kapis/alerting/v1"
 	alertingv2alpha1 "kubesphere.io/kubesphere/pkg/kapis/alerting/v2alpha1"
+	alertingv2beta1 "kubesphere.io/kubesphere/pkg/kapis/alerting/v2beta1"
 	clusterkapisv1alpha1 "kubesphere.io/kubesphere/pkg/kapis/cluster/v1alpha1"
 	configv1alpha2 "kubesphere.io/kubesphere/pkg/kapis/config/v1alpha2"
 	"kubesphere.io/kubesphere/pkg/kapis/crd"
@@ -264,6 +265,7 @@ func (s *APIServer) installKubeSphereAPIs(stopCh <-chan struct{}) {
 	urlruntime.Must(alertingv1.AddToContainer(s.container, s.Config.AlertingOptions.Endpoint))
 	urlruntime.Must(alertingv2alpha1.AddToContainer(s.container, s.InformerFactory,
 		s.KubernetesClient.Prometheus(), s.AlertingClient, s.Config.AlertingOptions))
+	urlruntime.Must(alertingv2beta1.AddToContainer(s.container, s.InformerFactory, s.AlertingClient))
 	urlruntime.Must(version.AddToContainer(s.container, s.KubernetesClient.Kubernetes().Discovery()))
 	urlruntime.Must(kubeedgev1alpha1.AddToContainer(s.container, s.Config.KubeEdgeOptions.Endpoint))
 	urlruntime.Must(edgeruntimev1alpha1.AddToContainer(s.container, s.Config.EdgeRuntimeOptions.Endpoint))
@@ -322,6 +324,7 @@ func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 			resourcev1alpha3.Resource(clusterv1alpha1.ResourcesPluralCluster),
 			notificationv2beta1.Resource(notificationv2beta1.ResourcesPluralConfig),
 			notificationv2beta1.Resource(notificationv2beta1.ResourcesPluralReceiver),
+			notificationv2beta2.Resource(notificationv2beta2.ResourcesPluralNotificationManager),
 			notificationv2beta2.Resource(notificationv2beta2.ResourcesPluralConfig),
 			notificationv2beta2.Resource(notificationv2beta2.ResourcesPluralReceiver),
 			notificationv2beta2.Resource(notificationv2beta2.ResourcesPluralRouter),
@@ -400,7 +403,11 @@ func waitForCacheSync(discoveryClient discovery.DiscoveryInterface, sharedInform
 			return err
 		})
 		if err != nil {
-			return fmt.Errorf("failed to fetch group version resources %s: %s", groupVersion, err)
+			if errors.IsNotFound(err) {
+				klog.Warningf("group version %s not exists in the cluster", groupVersion)
+				return nil
+			}
+			return fmt.Errorf("failed to fetch group version %s: %s", groupVersion, err)
 		}
 		for _, resourceName := range resourceNames {
 			groupVersionResource := groupVersion.WithResource(resourceName)
@@ -505,6 +512,7 @@ func (s *APIServer) waitForResourceSync(ctx context.Context) error {
 			notificationv2beta1.ResourcesPluralReceiver,
 		},
 		{Group: "notification.kubesphere.io", Version: "v2beta2"}: {
+			notificationv2beta2.ResourcesPluralNotificationManager,
 			notificationv2beta2.ResourcesPluralConfig,
 			notificationv2beta2.ResourcesPluralReceiver,
 			notificationv2beta2.ResourcesPluralRouter,

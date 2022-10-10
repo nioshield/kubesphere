@@ -20,6 +20,8 @@ package v2beta2
 
 type ConfigExpansion interface{}
 
+type NotificationManagerExpansion interface{}
+
 type ReceiverExpansion interface{}
 
 type RouterExpansion interface{}
